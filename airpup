@@ -1,0 +1,35 @@
+### BEGIN INIT INFO
+# Provides: airpupboot
+# Required-Start:
+# Required-Stop:
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Start AirAttack at boot time
+# Description: Start AirAttack at boot time
+### END INIT INFO
+
+#! /bin/sh
+# /etc/init.d/airpupboot
+
+USER=pi
+HOME=/home/pi
+
+export USER HOME
+
+case "$1" in
+ start)
+  echo "Starting AirPup"
+  su - pi -c "sudo python /home/pi/Documents/airpup/airpup.py"
+  ;;
+
+ stop)
+  echo "Stopping AirPup"
+  ;;
+
+ *)
+  echo "Usage: /etc/init.d/airpup (start|stop)"
+  exit 1
+  ;;
+esac
+
+exit 0
