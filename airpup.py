@@ -45,4 +45,4 @@ for cell in cells:
 
 # Target acquired, start airodumping our target bssid
 print "Target Acquired - " + bestCell["essid"]
-call(["airodump-ng", "wlan0mon", "-c", bestCell["channel"], "--bssid", bestCell["bssid"], "-w", cell["essid"]])
+call(["airodump-ng", "wlan0mon", "-c", bestCell["channel"], "--bssid", bestCell["bssid"], "-w", bestCell["essid"]])
