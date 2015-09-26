@@ -103,7 +103,7 @@ while cellsLeft == True:
     # copy our cleaned capture file to /captures
     os.system('cp airpuptmp.cap ./captures/' + bestCell["bssid"] + '.cap')
     os.system('rm -rf airpuptmp.cap')
-    os.system('rm -rf ' + bestCell["bssid"] + '.*')
+    os.system('rm -rf ' + bestCell["bssid"] + '*')
 
     # add this AP to our blacklist
     f = open("airpup.csv", "a")
