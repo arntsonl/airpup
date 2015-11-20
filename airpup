@@ -1,5 +1,5 @@
 ### BEGIN INIT INFO
-# Provides: airpupboot
+# Provides: airpup
 # Required-Start:
 # Required-Stop:
 # Default-Start: 2 3 4 5
@@ -9,26 +9,38 @@
 ### END INIT INFO
 
 #! /bin/sh
-# /etc/init.d/airpupboot
 
-USER=pi
-HOME=/home/pi
+PATH=/bin:/usr/bin:/sbin:/usr/sbin
+DAEMON=/home/pi/airpup/airpup.sh
+PIDFILE=/var/run/airpup.pid
 
-export USER HOME
+test -x $DAEMON || exit 0
+
+. /lib/lsb/init-functions
 
 case "$1" in
- start)
-  echo "Starting AirPup"
-  su - pi -c "sudo python /home/pi/Documents/airpup/airpup.py"
-  ;;
-
- stop)
-  echo "Stopping AirPup"
-  ;;
-
+  start)
+     log_daemon_msg "Starting Airpup"
+     start_daemon -p $PIDFILE $DAEMON
+     log_end_msg $?
+   ;;
+  stop)
+     log_daemon_msg "Stopping Airpup"
+     killproc -p $PIDFILE $DAEMON
+     PID=`ps x | grep airpup | head -1 | awk '{print $1}'`
+     kill -9 $PID
+     log_end_msg $?
+   ;;
+  force-reload|restart)
+     $0 stop
+     $0 start
+   ;;
+  status)
+     status_of_proc -p $PIDFILE $DAEMON airpup && exit 0 || exit $?
+   ;;
  *)
-  echo "Usage: /etc/init.d/airpup (start|stop)"
-  exit 1
+   echo "Usage: /etc/init.d/airpup {start|stop|restart|force-reload|status}"
+   exit 1
   ;;
 esac
 

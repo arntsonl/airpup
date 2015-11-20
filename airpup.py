@@ -1,10 +1,15 @@
-import os
+import os, sys
 import time
-from subprocess import Popen, call
+from subprocess import Popen, call, PIPE
+
+pid = os.fork()
+if pid !=0:
+    # Running as daemon now.
+    sys.exit(0)
 
 # setup airmon assuming we have a wlan0 card
-call(["airmon-ng", "stop", "wlan0"])
-call(["airmon-ng", "start", "wlan0", "1"])
+call("sudo airmon-ng stop wlan0mon", stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+call("sudo airmon-ng start wlan0 1", stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
 
 # create our captures folder if it doesn't exist
 if not os.path.exists("captures"):
@@ -25,7 +30,7 @@ while cellsLeft == True:
     f.close()
     
     # setup airodump on a timer
-    p = Popen(["airodump-ng", "wlan0mon", "-o" ,"csv", "-w", "airpuptmp"])
+    p = Popen("sudo airodump-ng wlan0mon -o csv -w airpuptmp", stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
 
     # run for 60 seconds, then terminate the process
     timeout = 60
@@ -65,14 +70,15 @@ while cellsLeft == True:
             bestCell = cell
 
     # Target acquired, start airodumping our target bssid
-    p = Popen(["airodump-ng", "wlan0mon", "-c", bestCell["channel"], "--bssid", bestCell["bssid"], "-w", bestCell["bssid"]])
+    os.system("rm -rf " + bestCell["bssid"] + "-*") # clean up old entries if we restarted
+    p = Popen("sudo airodump-ng wlan0mon -c " + bestCell["channel"] + " --bssid " + bestCell["bssid"] + " -w " + bestCell["bssid"], stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
 
     # check the handshake every 10.0 seconds
     checkHandshake = 10.0
     handshakeFound = False
     while handshakeFound == False:
         time.sleep(checkHandshake)
-
+        
         # de-authenticate every client :[]
         # keys = ['mac', 'first_seen', 'last_seen', 'power', '# packets', 'bssid', 'essid']
         # clients = []
@@ -84,16 +90,19 @@ while cellsLeft == True:
         #     os.system("aireplay-ng -0 5 -a " + bestCell["bssid"] + " -c " + client["mac"] + " wlan0mon")
 
         # use wpaclean to filter out handshakes and beacons
-        os.system('cp ' + bestCell["bssid"] + '-01.cap tmp.cap')
-        os.system('wpaclean airpuptmp.cap tmp.cap')
-        os.system('rm -rf tmp.cap')
+        call('cp ' + bestCell["bssid"] + '-01.cap tmp.cap', stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+        call('sudo wpaclean airpuptmp.cap tmp.cap', stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+        call('rm -rf tmp.cap', stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
         
         # check to see if our capture file is > 24 bytes (24 bytes = 0 packets)
-        f = open('airpuptmp.cap', 'rb')
-        bytes = f.read()
-        f.close()
-        if len(bytes) > 24:
-            handshakeFound = True
+        try:            
+            f = open('airpuptmp.cap', 'rb')
+            bytes = f.read()
+            f.close()
+            if len(bytes) > 24:
+                handshakeFound = True
+        except IOError:
+            pass # do nothing if we didn't find it
       
     # do not dump anymore, we are finished
     if p.poll() is None:
@@ -101,9 +110,9 @@ while cellsLeft == True:
         p.wait()
             
     # copy our cleaned capture file to /captures
-    os.system('cp airpuptmp.cap ./captures/' + bestCell["bssid"] + '.cap')
-    os.system('rm -rf airpuptmp.cap')
-    os.system('rm -rf ' + bestCell["bssid"] + '*')
+    call('cp airpuptmp.cap ./captures/' + bestCell["bssid"] + '.cap', stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+    call('rm -rf airpuptmp.cap', stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+    call('rm -rf ' + bestCell["bssid"] + '*', stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
 
     # add this AP to our blacklist
     f = open("airpup.csv", "a")
